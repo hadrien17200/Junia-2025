@@ -1,10 +1,11 @@
-# Dockerfile pour GitHub Actions
-FROM php:8.2-fpm
-
-# Copier le site dans le container
-COPY ./site /var/www/html
-
-# Installer les extensions PHP si nécessaire
-# RUN docker-php-ext-install pdo pdo_mysql
-
+# Stage 1 : PHP-FPM
+FROM php:8.2-fpm AS php-base
 WORKDIR /var/www/html
+COPY ./site /var/www/html
+RUN chown -R www-data:www-data /var/www/html
+
+# Stage 2 : Nginx
+FROM nginx:latest
+COPY --from=php-base /var/www/html /usr/share/nginx/html
+COPY ./nginx-config/junia-site.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
