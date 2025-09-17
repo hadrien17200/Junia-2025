@@ -44,6 +44,9 @@ jobs:
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
+      - name: Rebuild Docker image (ensures image exists on this runner)
+        run: docker build -t "${{ secrets.DOCKERHUB_USERNAME }}/mon-site:latest" .
+
       - name: Push Docker image
         run: docker push "${{ secrets.DOCKERHUB_USERNAME }}/mon-site:latest"
 
