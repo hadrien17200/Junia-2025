@@ -1,4 +1,7 @@
-name: PHP Lint + Docker Build & Push
+
+
+
+name: PHP Lint + Docker Build Push + deploy
 
 on:
   push:
@@ -50,20 +53,24 @@ jobs:
           docker build -t "${{ secrets.DOCKERHUB_USERNAME }}/mon-site:latest" .
           docker push "${{ secrets.DOCKERHUB_USERNAME }}/mon-site:latest"
 
-    deploy:
-  runs-on: self-hosted
-  needs: push
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+  deploy:
+    runs-on: self-hosted
+    needs: push
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Deploy locally
-      run: |
-        docker pull hadrien17200/mon-site:latest
-        docker stop nginx-junia php-fpm-junia mysql-junia || true
-        docker rm nginx-junia php-fpm-junia mysql-junia || true
-        docker run -d --name mysql-junia -e MYSQL_ROOT_PASSWORD=mnVkrECAWnj96Yk4 -e MYSQL_DATABASE=site -e MYSQL_USER=app -e MYSQL_PASSWORD=mnVkrECAWnj96Yk4 mysql:8.0
-        docker run -d --name php-fpm-junia --link mysql-junia hadrien17200/mon-site:latest
-        docker run -d --name nginx-junia -p 80:80 --link php-fpm-junia -v /chemin/vers/nginx-config:/etc/nginx/conf.d nginx:latest
-
-
+      - name: Deploy locally
+        run: |
+          docker pull "${{ secrets.DOCKERHUB_USERNAME }}/mon-site:latest"
+          docker stop nginx-junia php-fpm-junia mysql-junia || true
+          docker rm nginx-junia php-fpm-junia mysql-junia || true
+          docker run -d --name mysql-junia \
+            -e MYSQL_ROOT_PASSWORD="${{ secrets.MYSQL_PASSWORD }}" \
+            -e MYSQL_DATABASE=site \
+            -e MYSQL_USER=app \
+            -e MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}" \
+            mysql:8.0
+          docker run -d --name php-fpm-junia --link mysql-junia "${{ secrets.DOCKERHUB_USERNAME }}/mon-site:latest"
+          docker run -d --name nginx-junia -p 80:80 --link php-fpm-junia \
+            -v /home/hadrien/Junia-2025/nginx-config:/etc/nginx/conf.d nginx:latest
